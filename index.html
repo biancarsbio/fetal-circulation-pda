@@ -1,0 +1,572 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="color-scheme" content="light">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fetal Circulation and PDA</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@1,400;1,500&family=Raleway:wght@400;600;700&display=swap">
+<style>
+
+/* Layout: pink title band, Playfair italic titles, Raleway text, line-art diagrams side by side. */
+:root {
+  --bg: #ffffff; --band: #eec0bf; --ink: #1f1b1b; --muted: #6b5f5f; --label: #c9716d;
+  --line: #2b2b2b; --tissue: #fbe6e5; --septum: #e7b3b0; --oxy: #d64545; --deoxy: #4f6fb3;
+  --soft: #f7eceb; --track: #f3dede;
+  --display: "Playfair Display", Georgia, "Times New Roman", serif;
+  --body: "Raleway", "Helvetica Neue", Arial, sans-serif;
+}
+:root { color-scheme: light; }
+* { box-sizing: border-box; }
+body { margin:0; background: var(--bg); color: var(--ink); font-family: var(--body); font-size: 17px; line-height: 1.5; }
+#appA .band { background: var(--band); padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 28px 22px; }
+#appA .band-inner, #appA .main { max-width: 1180px; margin: 0 auto; }
+#appA h1 { font-family: var(--display); font-style: italic; font-weight: 400; font-size: clamp(2rem, 5vw, 3.4rem); line-height: 1.1; margin: 0; text-wrap: balance; }
+#appA .sub { margin: 6px 0 0; letter-spacing: .03em; }
+#appA .main { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 22px 40px; display: grid; gap: 22px; }
+#appA .controls { display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center; justify-content: space-between; }
+#appA .stages { display: flex; flex-wrap: wrap; gap: 8px; }
+#appA .stages button { font: 600 .92rem var(--body); padding: 9px 16px; border-radius: 999px; border: 1.5px solid var(--band); background: var(--bg); color: var(--ink); cursor: pointer; }
+#appA .stages button[aria-pressed="true"] { background: var(--band); border-color: var(--band); }
+#appA .stages button:focus-visible, #appA .quiz input:focus-visible { outline: 3px solid var(--label); outline-offset: 2px; }
+#appA .quiz { display: inline-flex; gap: 8px; align-items: center; font-weight: 600; font-size: .95rem; cursor: pointer; }
+#appA .quiz input { width: 18px; height: 18px; accent-color: var(--label); }
+#appA .stage-title { font-family: var(--display); font-style: italic; font-size: clamp(1.6rem, 3.4vw, 2.4rem); margin: 0; }
+#appA .panels { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 28px; }
+#appA .panel { min-width: 0; display: grid; gap: 4px; align-content: start; }
+#appA .eyebrow { color: var(--label); font-weight: 700; letter-spacing: .06em; font-size: 1rem; margin: 0; }
+#appA .pressure { font-weight: 700; margin: 0 0 6px; min-height: 1.5em; transition: opacity .3s; }
+#appA svg { width: 100%; height: auto; display: block; overflow: visible; }
+#appA svg text { font-family: var(--body); fill: var(--ink); font-size: 22px; }
+#appA svg text.b { font-weight: 700; font-size: 25px; }
+#appA svg text.i { font-style: italic; }
+#appA svg text.hint { fill: var(--label); font-weight: 700; }
+#appA .fade { transition: opacity .6s ease; }
+#appA #a-flap { transition: transform .8s cubic-bezier(.5,0,.3,1); transform-box: view-box; transform-origin: 523px 790px; }
+#appA .cell { opacity: .95; }
+#appA .bars { display: grid; gap: 4px; margin-top: 8px; font-size: .85rem; color: var(--muted); }
+#appA .bar { display: grid; grid-template-columns: 10.5em 1fr; gap: 10px; align-items: center; }
+#appA .track { height: 10px; background: var(--track); border-radius: 5px; overflow: hidden; }
+#appA .fill { height: 100%; background: var(--label); border-radius: 5px; transition: width .7s ease; }
+#appA .foot { display: grid; grid-template-columns: 1fr auto; gap: 18px 28px; align-items: start; }
+#appA .caption { margin: 0; font-size: 1.15rem; line-height: 1.5; max-width: 70ch; }
+#appA .caption.predict { font-weight: 600; }
+#appA .legend { display: grid; gap: 6px; font-size: .95rem; }
+#appA .dot { display: inline-block; width: 16px; height: 16px; border-radius: 50%; vertical-align: -2px; margin-right: 8px; }
+#appA .hide { opacity: 0 !important; pointer-events: none; }
+@media (max-width: 640px) { #appA .foot { grid-template-columns: 1fr; } #appA .bar { grid-template-columns: 1fr; gap: 2px; } }
+@media (prefers-reduced-motion: reduce) { #appA #a-flap, #appA .fade, #appA .fill { transition: none; } #appA .cell { display: none; } }
+
+
+/* Layout: pink title band, Playfair italic titles, Raleway text, one line-art circulation diagram with three states. */
+:root {
+  --bg:#ffffff; --band:#eec0bf; --ink:#1f1b1b; --muted:#6b5f5f; --label:#c9716d; --line:#2b2b2b;
+  --oxy:#d64545; --deoxy:#4f6fb3; --mixed:#9061b0; --none:#eadcdc;
+  --oxy-t:#f7d0d0; --deoxy-t:#d3dcf1; --mixed-t:#e2d4ec; --none-t:#fbe6e5;
+  --lung:#f6dede; --lung-wet:#efc6c6; --lung-fetal:#e4dada; --organ:#f3e3e3; --placenta:#e9c4cf;
+  --display:"Playfair Display", Georgia, "Times New Roman", serif;
+  --body:"Raleway", "Helvetica Neue", Arial, sans-serif;
+}
+* { box-sizing:border-box; }
+body { margin:0; background:var(--bg); color:var(--ink); font-family:var(--body); font-size:17px; line-height:1.5; }
+#appB .band { background:var(--band); padding-left:max(16px, env(safe-area-inset-left, 0px)); padding-right:max(16px, env(safe-area-inset-right, 0px)); padding-block:26px 20px; }
+#appB .inner { max-width:1180px; margin:0 auto; }
+#appB h1 { font-family:var(--display); font-style:italic; font-weight:400; font-size:clamp(2rem,5vw,3.2rem); line-height:1.1; margin:0; text-wrap:balance; }
+#appB .sub { margin:6px 0 0; letter-spacing:.03em; }
+#appB main.inner { padding-left:max(16px, env(safe-area-inset-left, 0px)); padding-right:max(16px, env(safe-area-inset-right, 0px)); padding-block:20px 40px; display:grid; gap:16px; }
+#appB .controls { display:flex; flex-wrap:wrap; gap:10px 16px; align-items:center; justify-content:space-between; }
+#appB .states { display:flex; flex-wrap:wrap; gap:8px; }
+#appB .states button { font:600 .95rem var(--body); padding:9px 18px; border-radius:999px; border:1.5px solid var(--band); background:var(--bg); color:var(--ink); cursor:pointer; }
+#appB .states button[aria-pressed="true"] { background:var(--band); }
+#appB .states button:focus-visible, #appB .quiz input:focus-visible { outline:3px solid var(--label); outline-offset:2px; }
+#appB .quiz { display:inline-flex; gap:8px; align-items:center; font-weight:600; font-size:.95rem; cursor:pointer; }
+#appB .quiz input { width:18px; height:18px; accent-color:var(--label); }
+#appB .layout { display:grid; grid-template-columns:minmax(0,1.6fr) minmax(0,1fr); gap:28px; align-items:start; }
+@media (max-width:900px) { #appB .layout { grid-template-columns:1fr; } }
+#appB .stage-title { font-family:var(--display); font-style:italic; font-size:clamp(1.6rem,3.2vw,2.3rem); margin:0 0 8px; }
+#appB .side { display:grid; gap:14px; align-content:start; }
+#appB .caption { margin:0; font-size:1.08rem; }
+#appB .changes { margin:0; padding-left:1.1em; display:grid; gap:6px; }
+#appB .eyebrow { color:var(--label); font-weight:700; letter-spacing:.06em; font-size:.95rem; margin:0; }
+#appB .legend { display:grid; gap:6px; font-size:.95rem; }
+#appB .dot { display:inline-block; width:16px; height:16px; border-radius:50%; vertical-align:-2px; margin-right:8px; }
+#appB svg { width:100%; height:auto; display:block; }
+#appB svg text { font-family:var(--body); fill:var(--ink); font-size:17px; }
+#appB svg text.ch { font-weight:700; font-size:17px; }
+#appB svg text.big { font-family:var(--display); font-style:italic; font-size:24px; }
+#appB svg text.call { fill:var(--label); font-weight:700; font-size:18px; }
+#appB .mk circle { fill:var(--bg); stroke:var(--line); stroke-width:2.5; }
+#appB .mk text { text-anchor:middle; dominant-baseline:central; font-weight:700; font-size:15px; }
+#appB .key { margin:0; padding-left:1.7em; display:grid; gap:4px; font-size:.98rem; }
+#appB .key li::marker { font-weight:700; }
+#appB .o { fill:none; stroke:var(--line); stroke-linecap:butt; stroke-linejoin:round; }
+#appB .v { fill:none; stroke-linecap:butt; stroke-linejoin:round; transition:stroke .6s ease; }
+#appB .chamber { stroke:var(--line); stroke-width:3; transition:fill .6s ease, transform .8s ease; transform-box:view-box; }
+#appB .fade { transition:opacity .6s ease; }
+#appB .hide { opacity:0 !important; pointer-events:none; }
+#appB .cell { fill:#ffffff; opacity:.9; }
+@media (prefers-reduced-motion: reduce) { #appB .v, #appB .chamber, #appB .fade { transition:none; } #appB .cell { display:none; } }
+
+
+[hidden] { display:none !important; }
+#home .hinner { max-width:1180px; margin:0 auto; padding-left:max(16px, env(safe-area-inset-left, 0px)); padding-right:max(16px, env(safe-area-inset-right, 0px)); }
+#home .band { background:var(--band); padding-block:30px 24px; }
+#home h1 { font-family:var(--display); font-style:italic; font-weight:400; font-size:clamp(2rem,5vw,3.2rem); line-height:1.1; margin:0; }
+#home .sub { margin:6px 0 0; letter-spacing:.03em; }
+#home .cards { display:grid; grid-template-columns:repeat(auto-fit, minmax(280px, 1fr)); gap:20px; padding-block:28px 40px; }
+#home .card { all:unset; box-sizing:border-box; cursor:pointer; display:grid; gap:10px; align-content:start; padding:24px 26px; border:1.5px solid var(--band); border-radius:18px; background:var(--bg); color:var(--ink); font-family:var(--body); }
+#home .card:hover { background:var(--soft, #f7eceb); }
+#home .card:focus-visible { outline:3px solid var(--label); outline-offset:3px; }
+#home .kicker { color:var(--label); font-weight:700; letter-spacing:.08em; font-size:.85rem; }
+#home .ctitle { font-family:var(--display); font-style:italic; font-size:1.9rem; line-height:1.15; }
+#home .cdesc { color:var(--muted); }
+#home .cgo { color:var(--label); font-weight:700; }
+.back { all:unset; cursor:pointer; font-family:var(--body); font-weight:600; font-size:.95rem; color:var(--ink); padding:6px 14px; border-radius:999px; background:rgba(255,255,255,.55); margin-bottom:12px; display:inline-block; }
+.back:focus-visible { outline:3px solid var(--label); outline-offset:2px; }
+body { margin:0; background:var(--bg); color:var(--ink); font-family:var(--body); }
+
+</style>
+</head>
+<body>
+<section id="home">
+<header class="band"><div class="hinner">
+  <h1>Fetal circulation and PDA</h1>
+  <p class="sub">two interactive diagrams · from the fetus to an infant with a patent ductus arteriosus</p>
+</div></header>
+<div class="hinner cards">
+  <button type="button" class="card" data-go="appA">
+    <span class="kicker">01 · THE SHUNTS</span>
+    <span class="ctitle">Shunts at birth</span>
+    <span class="cdesc">Foramen ovale and ductus arteriosus in five stages, from before birth to an infant with a PDA.</span>
+    <span class="cgo">Open →</span>
+  </button>
+  <button type="button" class="card" data-go="appB">
+    <span class="kicker">02 · THE FULL CIRCUIT</span>
+    <span class="ctitle">The full circuit</span>
+    <span class="cdesc">Heart chambers, lungs, great arteries and veins in the fetus, a normal newborn and an infant with a PDA.</span>
+    <span class="cgo">Open →</span>
+  </button>
+</div>
+</section>
+<section id="appA" hidden>
+<header class="band"><div class="band-inner">
+  <button type="button" class="back" data-go="home">← All tools</button>
+  <h1>Shunts at birth</h1>
+  <p class="sub">what changes at birth, and which way the blood goes</p>
+</div></header>
+<main class="main">
+  <div class="controls">
+    <div class="stages" role="group" aria-label="Stage">
+      <button type="button" id="a-st-fetus" data-s="fetus">Before birth</button>
+      <button type="button" id="a-st-hours" data-s="hours">First breaths</button>
+      <button type="button" id="a-st-crying" data-s="crying">Day 1, crying</button>
+      <button type="button" id="a-st-week" data-s="week">Normal baby, 1 week</button>
+      <button type="button" id="a-st-pda" data-s="pda">Infant with PDA</button>
+    </div>
+    <label class="quiz"><input type="checkbox" id="a-quiz"> Predict first</label>
+  </div>
+
+  <h2 class="stage-title" id="a-stTitle">Before birth</h2>
+
+  <div class="panels">
+    <section class="panel" aria-label="Foramen ovale">
+      <p class="eyebrow">FORAMEN OVALE</p>
+      <p class="pressure" id="a-pFO"></p>
+      <svg viewBox="150 320 720 480" role="img" aria-label="Foramen ovale: the wall between the two atria">
+        <path d="M210,330 H810 A50,50 0 0 1 860,380 V740 A50,50 0 0 1 810,790 H210 A50,50 0 0 1 160,740 V380 A50,50 0 0 1 210,330 Z" fill="var(--tissue)" stroke="var(--line)" stroke-width="3"/>
+        <text class="b" x="190" y="375">Right atrium</text>
+        <text class="b" x="640" y="375">Left atrium</text>
+        <path d="M485,330 H515 V565 A15,15 0 0 1 485,565 Z" fill="var(--septum)" stroke="var(--line)" stroke-width="3"/>
+        <path id="a-flap" d="M517,426 A6,6 0 0 1 529,426 V790 H517 Z" fill="var(--septum)" stroke="var(--line)" stroke-width="3"/>
+        <text class="i" x="250" y="480">septum secundum</text><text class="i" x="250" y="506">(firm wall)</text>
+        <text class="i" x="610" y="710">septum primum</text><text class="i" x="610" y="736">(thin flap)</text>
+        <text class="hint fade" id="a-shutHint" x="545" y="580">← flap pushed shut</text>
+        <g id="a-foFlow" class="fade">
+          <g transform="translate(160,330)"><path d="M569.3,132.7 L620.0,138.0 L592.3,95.2 L585.0,107.1 L543.9,83.0 L511.7,66.3 L489.8,56.9 L468.2,50.3 L448.1,46.8 L435.3,46.4 L423.3,48.2 L411.5,52.3 L397.6,61.4 L389.8,70.0 L383.8,81.1 L379.8,93.9 L373.6,131.5 L370.0,217.6 L366.9,235.2 L362.5,250.6 L358.0,260.6 L347.7,277.4 L333.7,295.1 L322.7,306.6 L303.7,322.8 L282.1,338.2 L265.9,346.9 L257.2,350.5 L237.9,356.5 L205.3,363.0 L156.1,367.8 L125.4,368.2 L59.3,367.0 L55.6,368.3 L53.0,371.1 L52.0,374.9 L52.9,378.7 L55.5,381.6 L59.9,383.0 L141.5,384.2 L183.3,381.8 L207.7,378.8 L230.7,374.7 L262.6,365.6 L281.5,357.0 L306.2,341.1 L327.2,324.1 L340.0,311.9 L356.3,292.8 L369.0,273.9 L377.6,255.9 L382.5,238.7 L385.9,219.3 L389.5,132.7 L394.1,103.3 L398.5,87.3 L402.5,79.6 L408.0,73.6 L418.5,66.7 L426.8,63.8 L435.9,62.4 L452.2,63.4 L477.5,69.6 L497.6,77.4 L536.1,97.0 L576.6,120.8 Z" fill="var(--oxy)"/></g>
+          <path id="a-foPath" d="M220,705 C330,705 470,680 522,600 C545,560 535,470 552,415 C570,380 650,385 780,468" fill="none" stroke="none"/>
+          <circle class="cell" r="9" fill="var(--bg)" opacity=".85"><animateMotion dur="2.6s" repeatCount="indefinite"><mpath href="#a-foPath"/></animateMotion></circle>
+          <circle class="cell" r="9" fill="var(--bg)" opacity=".85"><animateMotion dur="2.6s" begin="1.3s" repeatCount="indefinite"><mpath href="#a-foPath"/></animateMotion></circle>
+        </g>
+      </svg>
+      <div class="bars" aria-hidden="true">
+        <div class="bar"><span>Right atrium</span><div class="track"><div class="fill" id="a-bRA"></div></div></div>
+        <div class="bar"><span>Left atrium</span><div class="track"><div class="fill" id="a-bLA"></div></div></div>
+      </div>
+    </section>
+
+    <section class="panel" aria-label="Ductus arteriosus">
+      <p class="eyebrow">DUCTUS ARTERIOSUS</p>
+      <p class="pressure" id="a-pDA"></p>
+      <svg viewBox="1070 290 800 560" role="img" aria-label="Ductus arteriosus between the pulmonary artery and the aorta">
+        <g transform="translate(1080,300)">
+          <path id="a-vOpen" class="fade" d="M345.0,90.3 L324.8,91.6 L292.5,95.8 L274.2,99.5 L250.0,106.2 L241.6,33.3 L211.8,36.7 L221.1,117.0 L199.3,127.8 L183.5,137.7 L161.0,155.8 L150.0,167.2 L138.0,182.9 L129.9,197.0 L123.3,212.1 L118.6,228.1 L115.8,244.8 L115.0,260.0 L115.0,500.0 L185.0,500.0 L185.0,261.0 L187.1,242.7 L189.5,235.0 L197.0,220.6 L208.4,207.2 L223.9,194.8 L243.1,183.9 L265.6,174.7 L277.9,170.8 L304.0,164.9 L331.6,161.2 L360.0,160.0 L388.4,161.2 L416.0,164.9 L442.1,170.8 L454.4,174.7 L466.0,179.0 L487.0,189.1 L504.3,200.9 L514.7,210.6 L447.6,264.3 L365.9,327.9 L250.8,292.9 L239.2,331.1 L342.0,362.4 L333.1,503.3 L386.9,506.7 L394.8,383.2 L476.8,420.2 L493.2,383.8 L408.4,345.4 L533.6,246.7 L535.0,261.0 L535.0,500.0 L605.0,500.0 L605.0,260.0 L604.2,244.8 L601.4,228.1 L596.7,212.1 L590.1,197.0 L582.0,182.9 L570.0,167.2 L559.0,155.8 L536.5,137.7 L520.7,127.8 L499.6,117.3 L510.2,37.0 L480.4,33.0 L470.8,106.4 L445.8,99.5 L427.5,95.8 L395.2,91.6 L375.0,90.3 L375.0,35.0 L345.0,35.0 Z" fill="var(--tissue)" stroke="var(--line)" stroke-width="3"/>
+          <path id="a-vNarrow" class="fade" d="M345.0,90.3 L324.8,91.6 L292.5,95.8 L274.2,99.5 L250.0,106.2 L241.6,33.3 L211.8,36.7 L221.1,117.0 L199.3,127.8 L183.5,137.7 L161.0,155.8 L150.0,167.2 L138.0,182.9 L129.9,197.0 L123.3,212.1 L118.6,228.1 L115.8,244.8 L115.0,260.0 L115.0,500.0 L185.0,500.0 L185.0,261.0 L187.1,242.7 L189.5,235.0 L197.0,220.6 L208.4,207.2 L223.9,194.8 L243.1,183.9 L265.6,174.7 L277.9,170.8 L304.0,164.9 L331.6,161.2 L360.0,160.0 L388.4,161.2 L416.0,164.9 L442.1,170.8 L454.4,174.7 L476.9,183.9 L496.1,194.8 L511.6,207.2 L521.8,219.1 L454.4,272.9 L374.5,335.1 L375.8,330.9 L250.8,292.9 L239.2,331.1 L342.0,362.4 L333.1,503.3 L386.9,506.7 L394.8,383.2 L476.8,420.2 L493.2,383.8 L397.1,340.3 L530.5,235.1 L534.4,251.0 L535.0,261.0 L535.0,500.0 L605.0,500.0 L605.0,260.0 L604.2,244.8 L601.4,228.1 L596.7,212.1 L590.1,197.0 L582.0,182.9 L570.0,167.2 L559.0,155.8 L536.5,137.7 L520.7,127.8 L499.6,117.3 L510.2,37.0 L480.4,33.0 L470.8,106.4 L445.8,99.5 L427.5,95.8 L395.2,91.6 L375.0,90.3 L375.0,35.0 L345.0,35.0 Z" fill="var(--tissue)" stroke="var(--line)" stroke-width="3"/>
+          <path id="a-vClosed" class="fade" d="M345.0,90.3 L324.8,91.6 L292.5,95.8 L274.2,99.5 L250.0,106.2 L241.6,33.3 L211.8,36.7 L221.1,117.0 L199.3,127.8 L183.5,137.7 L161.0,155.8 L150.0,167.2 L138.0,182.9 L129.9,197.0 L123.3,212.1 L118.6,228.1 L115.8,244.8 L115.0,260.0 L115.0,500.0 L185.0,500.0 L185.0,261.0 L187.1,242.7 L189.5,235.0 L197.0,220.6 L208.4,207.2 L223.9,194.8 L243.1,183.9 L265.6,174.7 L277.9,170.8 L304.0,164.9 L331.6,161.2 L360.0,160.0 L388.4,161.2 L416.0,164.9 L442.1,170.8 L454.4,174.7 L476.9,183.9 L496.1,194.8 L511.6,207.2 L523.0,220.6 L530.5,235.0 L532.9,242.7 L535.0,261.0 L535.0,500.0 L605.0,500.0 L605.0,260.0 L604.2,244.8 L601.4,228.1 L596.7,212.1 L590.1,197.0 L582.0,182.9 L570.0,167.2 L559.0,155.8 L536.5,137.7 L520.7,127.8 L499.6,117.3 L510.2,37.0 L480.4,33.0 L470.8,106.4 L445.8,99.5 L427.5,95.8 L395.2,91.6 L375.0,90.3 L375.0,35.0 L345.0,35.0 Z M386.9,506.7 L394.8,383.2 L476.8,420.2 L493.2,383.8 L378.2,331.8 L370.6,348.0 L375.8,330.9 L250.8,292.9 L239.2,331.1 L342.0,362.4 L333.1,503.3 Z" fill="var(--tissue)" stroke="var(--line)" stroke-width="3"/>
+          <path id="a-lig" class="fade" d="M469.1,277.0 L469.7,274.7 L469.0,272.8 L467.3,271.7 L464.9,271.8 L454.4,279.9 L453.6,283.8 L455.4,285.7 L458.1,285.7 Z M451.8,290.6 L452.4,288.7 L451.7,286.5 L449.7,285.2 L447.7,285.3 L437.1,293.4 L436.2,297.2 L438.0,299.2 L440.7,299.2 Z M434.4,304.1 L435.1,302.2 L434.3,300.0 L432.3,298.7 L430.3,298.8 L419.7,306.9 L418.8,310.7 L420.7,312.7 L423.4,312.7 Z M417.2,317.3 L417.7,315.0 L416.7,313.2 L415.0,312.2 L412.6,312.5 L402.1,320.7 L401.6,324.6 L403.6,326.3 L406.3,326.1 Z M399.9,330.9 L400.3,328.5 L399.4,326.7 L397.6,325.7 L395.3,326.0 L384.7,334.2 L384.2,338.1 L386.3,339.8 L388.9,339.6 Z M382.3,344.7 L383.0,342.7 L382.2,340.5 L380.2,339.2 L378.2,339.4 L367.6,347.5 L366.7,351.3 L368.6,353.2 L371.3,353.3 Z M553.1,209.7 L552.7,205.8 L551.1,204.7 L548.7,204.7 L540.1,211.5 L539.5,215.1 L541.4,217.0 L544.1,217.0 Z M538.0,221.7 L538.4,219.4 L537.5,217.6 L535.7,216.6 L533.3,216.9 L522.9,225.3 L522.5,229.1 L524.5,230.9 L527.2,230.6 Z M520.7,235.8 L521.3,233.8 L520.5,231.6 L518.5,230.4 L516.5,230.5 L506.0,238.8 L505.2,242.6 L507.0,244.5 L509.7,244.5 Z M503.7,249.2 L504.1,247.2 L503.1,245.1 L501.3,244.1 L499.0,244.4 L488.5,252.8 L488.1,256.6 L490.2,258.4 L492.8,258.1 Z M486.5,263.0 L486.9,261.0 L485.9,258.8 L484.1,257.8 L481.8,258.2 L471.4,266.5 L470.9,270.4 L473.0,272.1 L475.7,271.9 Z" fill="var(--line)"/>
+          <g id="a-r2l" class="fade"><path d="M363.6,356.0 L424.2,311.6 L484.2,265.6 L518.8,235.9 L529.0,229.7 L534.5,229.5 L540.0,233.6 L543.0,237.5 L548.6,248.5 L553.2,261.9 L556.2,277.0 L558.0,305.4 L560.5,420.1 L547.6,420.2 L568.0,460.0 L587.5,419.8 L574.5,419.9 L571.6,294.6 L570.1,275.0 L566.8,258.4 L561.5,242.9 L554.9,230.1 L550.4,224.1 L545.9,220.0 L538.7,216.1 L531.9,215.0 L524.7,216.3 L517.7,219.7 L510.6,224.6 L475.7,254.5 L415.8,300.4 L355.9,344.3 L353.7,347.0 L353.1,351.0 L355.8,355.6 L361.0,356.9 Z" fill="var(--deoxy)"/></g>
+          <g id="a-l2r" class="fade"><path d="M430.7,138.9 L480.9,155.7 L496.5,162.4 L509.8,169.3 L521.9,176.5 L530.6,183.6 L534.4,189.4 L534.3,195.2 L527.5,208.1 L510.0,228.2 L491.0,243.8 L409.6,304.5 L389.5,322.6 L375.8,338.3 L368.9,349.5 L363.4,362.6 L361.1,371.4 L358.8,389.7 L345.8,389.2 L364.0,430.0 L385.8,390.9 L372.8,390.4 L374.9,373.9 L376.7,367.1 L381.2,356.0 L390.5,342.1 L404.8,327.1 L418.4,315.3 L499.5,255.0 L519.5,238.5 L539.0,216.0 L545.5,205.1 L547.9,198.5 L548.8,192.4 L548.0,185.8 L545.1,179.3 L541.2,174.4 L529.5,164.8 L509.6,153.3 L494.7,146.1 L476.2,139.1 L436.4,126.1 L431.7,126.2 L427.8,129.9 L427.6,135.3 Z" fill="var(--oxy)"/></g>
+        </g>
+        <path id="a-r2lPath" d="M1440,650 L1612,522 C1640,545 1646,600 1648,760" fill="none" stroke="none"/>
+        <path id="a-l2rPath" d="M1560,425 C1610,450 1640,490 1600,528 L1480,622 C1455,642 1446,670 1444,730" fill="none" stroke="none"/>
+        <g id="a-r2lCells" class="fade">
+          <circle class="cell" r="8" fill="var(--bg)" opacity=".85"><animateMotion dur="2.2s" repeatCount="indefinite"><mpath href="#a-r2lPath"/></animateMotion></circle>
+          <circle class="cell" r="8" fill="var(--bg)" opacity=".85"><animateMotion dur="2.2s" begin="1.1s" repeatCount="indefinite"><mpath href="#a-r2lPath"/></animateMotion></circle>
+        </g>
+        <g id="a-l2rCells" class="fade">
+          <circle class="cell" r="8" fill="var(--bg)" opacity=".85"><animateMotion dur="1.6s" repeatCount="indefinite"><mpath href="#a-l2rPath"/></animateMotion></circle>
+          <circle class="cell" r="8" fill="var(--bg)" opacity=".85"><animateMotion dur="1.6s" begin=".8s" repeatCount="indefinite"><mpath href="#a-l2rPath"/></animateMotion></circle>
+        </g>
+        <text class="b" x="1100" y="625">Aorta</text>
+        <text x="1605" y="352">to head</text><text x="1605" y="378">and arms</text>
+        <text x="1700" y="720">to lower</text><text x="1700" y="746">body ↓</text>
+        <text class="b" x="1282" y="756" style="font-size:22px">Pulmonary</text><text class="b" x="1282" y="782" style="font-size:22px">artery</text>
+        <text x="1500" y="758">to lungs</text>
+        <text class="i" id="a-dLabel" x="1432" y="520">ductus</text>
+      </svg>
+      <div class="bars" aria-hidden="true">
+        <div class="bar"><span>Pulmonary artery</span><div class="track"><div class="fill" id="a-bPA"></div></div></div>
+        <div class="bar"><span>Aorta</span><div class="track"><div class="fill" id="a-bAO"></div></div></div>
+      </div>
+    </section>
+  </div>
+
+  <div class="foot">
+    <p class="caption" id="a-cap" aria-live="polite"></p>
+    <div class="legend">
+      <span><span class="dot" style="background:var(--oxy)"></span>oxygen-rich blood</span>
+      <span><span class="dot" style="background:var(--deoxy)"></span>oxygen-poor blood</span>
+    </div>
+  </div>
+</main>
+</section>
+<section id="appB" hidden>
+<header class="band"><div class="inner">
+  <button type="button" class="back" data-go="home">← All tools</button>
+  <h1>The full circuit</h1>
+  <p class="sub">heart, lungs and great arteries: fetus, normal newborn, and an infant with a patent ductus arteriosus</p>
+</div></header>
+<main class="inner">
+  <div class="controls">
+    <div class="states" role="group" aria-label="Circulation">
+      <button type="button" data-s="fetus">Fetus</button>
+      <button type="button" data-s="baby">Normal newborn</button>
+      <button type="button" data-s="pda">Infant with PDA</button>
+    </div>
+    <label class="quiz"><input type="checkbox" id="b-quiz"> Predict first</label>
+  </div>
+
+  <div class="layout">
+    <svg viewBox="40 110 1130 890" role="img" aria-label="Circulation diagram with heart chambers, lungs, great arteries and veins">
+      <!-- organs -->
+      <rect x="640" y="130" width="320" height="56" rx="16" fill="var(--organ)" stroke="var(--line)" stroke-width="3"/>
+      <text x="800" y="165" text-anchor="middle" font-weight="700">Head and arms</text>
+      <rect x="380" y="940" width="620" height="50" rx="16" fill="var(--organ)" stroke="var(--line)" stroke-width="3"/>
+      <text x="690" y="972" text-anchor="middle" font-weight="700">Lower body</text>
+      <path id="b-lungR" class="chamber" d="M368,272 C300,250 205,282 172,382 C150,462 160,540 202,576 C262,604 344,590 368,560 Z"/>
+      <path id="b-lungL" class="chamber" d="M942,272 C1010,250 1105,282 1138,382 C1160,462 1150,540 1108,576 C1048,604 966,590 942,560 Z"/>
+      <text class="big" x="250" y="320">Lungs</text>
+      <text class="big" x="1020" y="320">Lungs</text>
+      <g id="b-fetalOnly" class="fade">
+        <path d="M70,895 C70,870 110,872 170,872 C235,872 280,874 280,905 C280,950 240,992 170,992 C100,992 70,950 70,895 Z" fill="var(--placenta)" stroke="var(--line)" stroke-width="3"/>
+        <text x="175" y="938" text-anchor="middle" font-weight="700">Placenta</text>
+      </g>
+      <path d="M205,770 C240,748 360,748 386,770 C398,790 396,820 380,834 C340,852 240,852 210,834 C196,818 194,786 205,770 Z" fill="var(--organ)" stroke="var(--line)" stroke-width="3"/>
+      <text x="300" y="777" text-anchor="middle" font-size="16">liver</text>
+
+      <!-- vessels behind the heart -->
+      <g>
+        <path class="o" stroke-width="30" d="M330,520 L432,622"/>
+        <path class="o" stroke-width="30" d="M962,520 L768,632"/>
+        <path class="o" stroke-width="44" d="M470,942 V905 C470,880 405,885 405,860 V650 L440,650"/>
+        <path id="b-rpv" class="v" stroke-width="24" d="M330,520 L432,622"/>
+        <path id="b-lpv" class="v" stroke-width="24" d="M962,520 L768,632"/>
+        <path id="b-ivc" class="v" stroke-width="38" d="M470,942 V905 C470,880 405,885 405,860 V650 L440,650"/>
+      </g>
+      <g id="b-umb" class="fade">
+        <path class="o" stroke-width="22" d="M383,966 L280,948"/>
+        <path class="o" stroke-width="22" d="M383,980 L276,968"/>
+        <path class="o" stroke-width="28" d="M170,874 V800 L222,800"/>
+        <path id="b-ua" class="v" stroke-width="16" d="M383,966 L280,948"/>
+        <path id="b-ua2" class="v" stroke-width="16" d="M383,980 L276,968"/>
+        <path id="b-uv" class="v" stroke-width="22" d="M170,874 V800 L222,800"/>
+      </g>
+      <path class="o" stroke-width="28" d="M216,800 H410" id="b-dvO"/>
+      <path id="b-dv" class="v" stroke-width="22" d="M216,800 H410"/>
+      <path id="b-dvLig" class="fade" d="M220,800 H400" stroke="var(--line)" stroke-width="4" stroke-dasharray="8 8" fill="none"/>
+
+      <!-- heart chambers -->
+      <rect id="b-ra" class="chamber" x="430" y="560" width="165" height="140" rx="20" style="transform-origin:595px 700px"/>
+      <rect id="b-rv" class="chamber" x="430" y="706" width="165" height="150" rx="20" style="transform-origin:595px 706px"/>
+      <rect id="b-la" class="chamber" x="605" y="560" width="165" height="140" rx="20" style="transform-origin:605px 700px"/>
+      <rect id="b-lv" class="chamber" x="605" y="706" width="165" height="150" rx="20" style="transform-origin:605px 706px"/>
+      <!-- foramen ovale -->
+      <g id="b-foOpen" class="fade">
+        <rect x="590" y="582" width="20" height="40" rx="6" fill="var(--bg)" stroke="var(--line)" stroke-width="2"/>
+        <path class="v" id="b-foFlow" stroke-width="12" d="M575,602 H628"/>
+        <path d="M624,594 L638,602 L624,610 Z" fill="var(--line)"/>
+      </g>
+      <path id="b-foShut" class="fade" d="M600,580 V626" stroke="var(--line)" stroke-width="6" stroke-linecap="round"/>
+
+      <!-- aorta (outlines first, then inside, so the branches merge cleanly) -->
+      <g>
+        <path class="o" stroke-width="36" d="M711,348 L704,186"/>
+        <path class="o" stroke-width="36" d="M788,336 L796,186"/>
+        <path class="o" stroke-width="52" d="M665,790 V400 C665,300 880,300 880,400 V942"/>
+        <path class="v aorta" stroke-width="30" d="M711,348 L704,186"/>
+        <path class="v aorta" stroke-width="30" d="M788,336 L796,186"/>
+        <path class="v aorta" id="b-aorta" stroke-width="46" d="M665,790 V400 C665,300 880,300 880,400 V942"/>
+      </g>
+
+      <!-- pulmonary artery and ductus arteriosus (in front of the aorta) -->
+      <g>
+        <path class="o" stroke-width="52" d="M535,792 V520 C535,470 560,445 600,440"/>
+        <path class="o" id="b-rpaO" stroke-width="36" d="M600,440 C520,425 430,410 352,402"/>
+        <path class="o" id="b-lpaO" stroke-width="36" d="M596,440 C660,452 760,475 820,488 C870,498 920,470 958,452"/>
+        <path class="o fade" id="b-ductO" stroke-width="34" d="M760,478 L868,402"/>
+        <path class="v pa" id="b-pa" stroke-width="46" d="M535,792 V520 C535,470 560,445 600,440"/>
+        <path class="v pab" id="b-rpa" stroke-width="30" d="M600,440 C520,425 430,410 352,402"/>
+        <path class="v pab" id="b-lpa" stroke-width="30" d="M596,440 C660,452 760,475 820,488 C870,498 920,470 958,452"/>
+        <path class="v fade" id="b-duct" stroke-width="28" d="M760,478 L868,402"/>
+        <path id="b-ductLig" class="fade" d="M764,476 L862,406" stroke="var(--line)" stroke-width="5" stroke-dasharray="8 8" fill="none"/>
+      </g>
+      <!-- superior vena cava (in front of the right pulmonary artery) -->
+      <path class="o" stroke-width="40" d="M470,566 V165 H642"/>
+      <path class="v" id="b-svc" stroke-width="34" d="M470,566 V165 H642"/>
+
+      <!-- flow paths for moving cells -->
+      <g fill="none" stroke="none">
+        <path id="b-fSvc" d="M640,165 H470 V560"/>
+        <path id="b-fIvc" d="M470,940 V905 C470,880 405,885 405,860 V650 L440,650"/>
+        <path id="b-fPa" d="M535,790 V520 C535,470 560,445 600,440"/>
+        <path id="b-fRpa" d="M600,440 C520,425 430,410 352,402"/>
+        <path id="b-fLpa" d="M596,440 C660,452 760,475 820,488 C870,498 920,470 958,452"/>
+        <path id="b-fAo" d="M665,790 V400 C665,300 880,300 880,400 V940"/>
+        <path id="b-fHead" d="M711,348 L704,190"/>
+        <path id="b-fDuctR2L" d="M760,478 L868,402 L880,440 V940"/>
+        <path id="b-fDuctL2R" d="M868,402 L760,478 C700,465 650,452 600,440 C520,425 430,410 352,402"/>
+        <path id="b-fRpv" d="M330,520 L432,622"/>
+        <path id="b-fLpv" d="M962,520 L768,632"/>
+        <path id="b-fFo" d="M575,602 H630"/>
+        <path id="b-fUv" d="M170,874 V800 H410"/>
+        <path id="b-fUa" d="M383,966 L280,948"/>
+      </g>
+      <g id="b-cells"></g>
+
+      <!-- labels -->
+      <text class="ch" x="442" y="592">Right</text><text class="ch" x="442" y="614">atrium</text>
+      <text class="ch" x="442" y="814">Right</text><text class="ch" x="442" y="836">ventricle</text>
+      <text class="ch" x="695" y="592">Left</text><text class="ch" x="695" y="614">atrium</text>
+      <text class="ch" x="695" y="814">Left</text><text class="ch" x="695" y="836">ventricle</text>
+      <g id="b-fetalLabels" class="fade">
+      </g>
+      <!-- numbered markers (key in the side panel) -->
+      <g id="b-markers">
+        <g class="mk" transform="translate(470,330)"><circle r="15"/><text>1</text></g>
+        <g class="mk" transform="translate(405,765)"><circle r="15"/><text>2</text></g>
+        <g class="mk" transform="translate(535,660)"><circle r="15"/><text>3</text></g>
+        <g class="mk" transform="translate(665,528)"><circle r="15"/><text>4</text></g>
+        <g class="mk" transform="translate(880,720)"><circle r="15"/><text>4</text></g>
+        <g class="mk" transform="translate(814,440)"><circle r="15"/><text>5</text></g>
+        <g class="mk" transform="translate(381,571)"><circle r="15"/><text>6</text></g>
+        <g class="mk" transform="translate(925,540)"><circle r="15"/><text>6</text></g>
+        <g class="mk" transform="translate(600,548)"><circle r="15"/><text>7</text></g>
+        <g class="mk" transform="translate(300,800)"><circle r="15"/><text>8</text></g>
+        <g class="mk fade" id="b-mk9" transform="translate(170,838)"><circle r="15"/><text>9</text></g>
+        <g class="mk fade" id="b-mk10" transform="translate(330,960)"><circle r="15"/><text>10</text></g>
+      </g>
+      <g id="b-pdaCalls" class="fade">
+        <text class="call" x="160" y="250">extra blood</text>
+        <text class="call" x="960" y="250">extra blood</text>
+        <text class="call" x="610" y="905">left heart enlarged</text>
+        <text class="call" x="914" y="880">less to body</text>
+      </g>
+      <g id="b-fetalCalls" class="fade">
+        <text class="call" x="160" y="250">collapsed, fluid-filled</text>
+        <text class="call" x="955" y="250">little blood flow</text>
+      </g>
+    </svg>
+
+    <div class="side">
+      <h2 class="stage-title" id="b-title">Fetus</h2>
+      <p class="caption" id="b-cap" aria-live="polite"></p>
+      <div>
+        <p class="eyebrow">THE THREE SHUNTS</p>
+        <ul class="changes" id="b-shunts"></ul>
+      </div>
+      <div>
+        <p class="eyebrow">LABELS</p>
+        <ol class="key" id="b-key"></ol>
+      </div>
+      <div class="legend">
+        <span><span class="dot" style="background:var(--oxy)"></span>oxygen-rich blood</span>
+        <span><span class="dot" style="background:var(--mixed)"></span>mixed blood</span>
+        <span><span class="dot" style="background:var(--deoxy)"></span>oxygen-poor blood</span>
+      </div>
+    </div>
+  </div>
+</main>
+</section>
+<script>
+(function(){
+const ROOT = document.getElementById("appA");
+
+const S = {
+  fetus:  { t:"Before birth", pFO:"Right atrium  >  Left atrium", pDA:"Pulmonary artery  >  Aorta",
+            ra:78, la:45, pa:80, ao:68, fo:"open", duct:"open", flow:"r2l", label:"ductus",
+            cap:"The lungs are collapsed and full of fluid, so pulmonary vascular resistance (resistance in the lung vessels) is high. The placenta keeps the body side low. Higher pressure on the right side, so blood crosses right-to-left and skips the lungs." },
+  hours:  { t:"First breaths", pFO:"Left atrium  >  Right atrium", pDA:"Aorta  ≈  Pulmonary artery",
+            ra:35, la:65, pa:64, ao:68, fo:"shut", duct:"narrow", flow:"none", label:"ductus (narrowing)",
+            cap:"First breath: the lungs expand, oxygen rises and pulmonary vascular resistance falls. Cord clamped: left atrial pressure rises and pushes the flap (septum primum) shut. More oxygen and less prostaglandin: the ductus starts to constrict." },
+  crying: { t:"Day 1, crying", pFO:"Left atrium  >  Right atrium", pDA:"Pulmonary artery  >  Aorta  (while crying)",
+            ra:40, la:62, pa:82, ao:70, fo:"shut", duct:"open", flow:"r2l", label:"ductus",
+            cap:"Crying raises pulmonary vascular resistance for a moment. Oxygen-poor blood crosses the still-open ductus into the aorta, after the branches to the head and arms, so the legs look more blue. It is transient." },
+  week:   { t:"Normal baby, about 1 week", pFO:"Left atrium  >  Right atrium", pDA:"Aorta  >  Pulmonary artery",
+            ra:30, la:60, pa:28, ao:82, fo:"shut", duct:"closed", flow:"none", label:"ligament",
+            cap:"The ductus normally closes between 24 hours and the first week and becomes a ligament (ligamentum arteriosum). The two circulations are now separate: right heart → lungs, left heart → body." },
+  pda:    { t:"Infant with PDA", pFO:"Left atrium  >  Right atrium", pDA:"Aorta  >>  Pulmonary artery",
+            ra:30, la:72, pa:40, ao:88, fo:"shut", duct:"open", flow:"l2r", label:"ductus",
+            cap:"The ductus stayed open and lung pressure kept falling. Blood flows aorta → pulmonary artery in systole and diastole (continuous murmur). The lungs and left heart get extra blood and the body gets less. No right-to-left flow, so the infant stays pink." }
+};
+const $ = id => document.getElementById("a-" + id);
+const vis = (id, on) => $(id).classList.toggle("hide", !on);
+let cur = "fetus";
+function render() {
+  const s = S[cur], q = $("quiz").checked;
+  ROOT.querySelectorAll(".stages button").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.s === cur)));
+  $("stTitle").textContent = s.t;
+  $("pFO").textContent = s.pFO; $("pDA").textContent = s.pDA;
+  $("bRA").style.width = s.ra + "%"; $("bLA").style.width = s.la + "%";
+  $("bPA").style.width = s.pa + "%"; $("bAO").style.width = s.ao + "%";
+  // flap: open = tilted toward the left atrium; in predict mode keep it neutral (shut position) so it doesn't give the answer away
+  const open = s.fo === "open" && !q;
+  $("flap").style.transform = open ? "rotate(9deg)" : "rotate(0deg)";
+  vis("foFlow", open);
+  vis("shutHint", cur === "hours" && !q);
+  vis("vOpen", s.duct === "open"); vis("vNarrow", s.duct === "narrow"); vis("vClosed", s.duct === "closed");
+  vis("lig", s.duct === "closed");
+  vis("r2l", s.flow === "r2l" && !q); vis("r2lCells", s.flow === "r2l" && !q);
+  vis("l2r", s.flow === "l2r" && !q); vis("l2rCells", s.flow === "l2r" && !q);
+  $("dLabel").textContent = s.label;
+  const c = $("cap");
+  c.classList.toggle("predict", q);
+  c.textContent = q ? "Predict first: look at the pressures above each picture. Which way will blood cross each shunt, and why? Untick “Predict first” to check." : s.cap;
+}
+ROOT.querySelectorAll(".stages button").forEach(b => b.addEventListener("click", () => { cur = b.dataset.s; render(); }));
+$("quiz").addEventListener("change", render);
+document.addEventListener("keydown", e => {
+  if (ROOT.hidden) return;
+  const keys = Object.keys(S); let i = keys.indexOf(cur);
+  if (e.key === "ArrowRight" && i < keys.length - 1) { cur = keys[i + 1]; render(); }
+  if (e.key === "ArrowLeft" && i > 0) { cur = keys[i - 1]; render(); }
+  if (e.key.toLowerCase() === "p") { $("quiz").checked = !$("quiz").checked; render(); }
+});
+render();
+
+})();
+(function(){
+const ROOT = document.getElementById("appB");
+
+const C = { O:"var(--oxy)", D:"var(--deoxy)", M:"var(--mixed)", N:"var(--none)" };
+const T = { O:"var(--oxy-t)", D:"var(--deoxy-t)", M:"var(--mixed-t)", N:"var(--none-t)" };
+const S = {
+  fetus: {
+    title:"Fetus",
+    cap:"Oxygen comes from the placenta. Oxygen-rich blood travels in the umbilical vein, skips the liver through the ductus venosus and enters the inferior vena cava. In the right atrium, much of it crosses the foramen ovale to the left heart and goes first to the head and the heart. The lungs are collapsed, so pulmonary vascular resistance is high: most blood from the right ventricle skips the lungs through the ductus arteriosus. Blood returns to the placenta through the umbilical arteries.",
+    shunts:["Ductus venosus: open, umbilical vein → inferior vena cava (skips the liver)","Foramen ovale: open, right atrium → left atrium (skips the lungs)","Ductus arteriosus: open, pulmonary artery → aorta (skips the lungs)"],
+    v:{ svc:"D", ivc:"M", rpv:"D", lpv:"D", pa:"D", rpa:"D", lpa:"D", aorta:"M", duct:"D", uv:"O", dv:"O", ua:"D", ua2:"D", foFlow:"O" },
+    ch:{ ra:"M", rv:"D", la:"M", lv:"M" }, branchW:16, lungs:"var(--lung-fetal)",
+    fo:true, duct:"open", dv:true, fetal:true, pdaBig:false,
+    flows:[["fSvc",3,3.2],["fIvc",3,3],["fUv",3,3],["fUa",2,2.4],["fFo",2,1.4],["fPa",2,2.4],["fDuctR2L",3,3.4],["fAo",4,3.6],["fHead",2,1.6],["fRpa",1,3],["fLpa",1,3.6]]
+  },
+  baby: {
+    title:"Normal newborn",
+    cap:"With the first breaths the lungs expand and pulmonary vascular resistance falls. The cord is clamped, so the placenta is gone. Left atrial pressure rises and pushes the foramen ovale flap shut. The ductus arteriosus and ductus venosus close. Now there are two separate circuits: body → right heart → lungs → left heart → body.",
+    shunts:["Ductus venosus: closed (becomes a ligament)","Foramen ovale: closed (flap pushed shut)","Ductus arteriosus: closed within the first week (becomes a ligament)"],
+    v:{ svc:"D", ivc:"D", rpv:"O", lpv:"O", pa:"D", rpa:"D", lpa:"D", aorta:"O", duct:"N", uv:"N", dv:"N", ua:"N", ua2:"N", foFlow:"N" },
+    ch:{ ra:"D", rv:"D", la:"O", lv:"O" }, branchW:30, lungs:"var(--lung)",
+    fo:false, duct:"closed", dv:false, fetal:false, pdaBig:false,
+    flows:[["fSvc",3,3],["fIvc",3,3],["fPa",3,2.2],["fRpa",3,2.6],["fLpa",3,3],["fRpv",2,1.6],["fLpv",2,1.8],["fAo",4,3.2],["fHead",2,1.6]]
+  },
+  pda: {
+    title:"Infant with PDA",
+    cap:"The ductus arteriosus stayed open. Aortic pressure is now much higher than pulmonary pressure, so oxygen-rich blood flows from the aorta into the pulmonary artery all the time: a continuous murmur. The lungs get too much blood (fast breathing, crackles), the extra blood returns to the left atrium and left ventricle (enlarged, S3), and the body gets less (pale, cool skin, poor growth). The infant stays pink: no right-to-left flow.",
+    shunts:["Ductus venosus: closed","Foramen ovale: closed","Ductus arteriosus: OPEN, aorta → pulmonary artery (left-to-right)"],
+    v:{ svc:"D", ivc:"D", rpv:"O", lpv:"O", pa:"D", rpa:"M", lpa:"M", aorta:"O", duct:"O", uv:"N", dv:"N", ua:"N", ua2:"N", foFlow:"N" },
+    ch:{ ra:"D", rv:"D", la:"O", lv:"O" }, branchW:30, lungs:"var(--lung-wet)",
+    fo:false, duct:"open", dv:false, fetal:false, pdaBig:true,
+    flows:[["fSvc",3,3],["fIvc",3,3],["fPa",3,2.2],["fRpa",4,2],["fLpa",4,2.3],["fRpv",3,1.2],["fLpv",3,1.3],["fAo",4,3],["fHead",2,1.6],["fDuctL2R",4,2.2]]
+  }
+};
+const $ = id => document.getElementById("b-" + id);
+const vis = (id, on) => $(id).classList.toggle("hide", !on);
+let cur = "fetus";
+function render() {
+  const s = S[cur], q = $("quiz").checked;
+  ROOT.querySelectorAll(".states button").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.s === cur)));
+  $("title").textContent = s.title;
+  for (const [id, k] of Object.entries(s.v)) $(id).style.stroke = q ? C.N : C[k];
+  ROOT.querySelectorAll(".aorta").forEach(e => e.style.stroke = q ? C.N : C[s.v.aorta]);
+  for (const [id, k] of Object.entries(s.ch)) $(id).style.fill = q ? T.N : T[k];
+  $("lungR").style.fill = s.lungs; $("lungL").style.fill = s.lungs;
+  $("rpa").setAttribute("stroke-width", s.branchW); $("lpa").setAttribute("stroke-width", s.branchW);
+  $("rpaO").setAttribute("stroke-width", s.branchW + 6); $("lpaO").setAttribute("stroke-width", s.branchW + 6);
+  $("la").style.transform = s.pdaBig ? "scale(1.12)" : "scale(1)";
+  $("lv").style.transform = s.pdaBig ? "scale(1.1)" : "scale(1)";
+  vis("foOpen", s.fo); vis("foShut", !s.fo);
+  vis("duct", s.duct === "open"); vis("ductO", s.duct === "open"); vis("ductLig", s.duct === "closed");
+  vis("dv", s.dv); vis("dvO", s.dv); vis("dvLig", !s.dv);
+  vis("mk9", s.fetal); vis("mk10", s.fetal);
+  const key = [
+    "Superior vena cava (from head and arms)",
+    "Inferior vena cava (from lower body)",
+    "Pulmonary artery (from right ventricle, to lungs)",
+    "Aorta (from left ventricle, to body)",
+    s.duct === "closed" ? "Ligamentum arteriosum (closed ductus arteriosus)" : "Ductus arteriosus" + (s.duct === "open" && cur === "pda" ? " (still open)" : ""),
+    "Pulmonary veins (from lungs, to left atrium)",
+    s.fo ? "Foramen ovale (open)" : "Foramen ovale (closed)",
+    s.dv ? "Ductus venosus (skips the liver)" : "Ligamentum venosum (closed ductus venosus)"
+  ];
+  if (s.fetal) key.push("Umbilical vein (from placenta)", "Umbilical arteries (to placenta)");
+  const ol = $("key"); ol.innerHTML = "";
+  key.forEach(t => { const li = document.createElement("li"); li.textContent = t; ol.appendChild(li); });
+  vis("umb", s.fetal); vis("fetalOnly", s.fetal); vis("fetalLabels", s.fetal);
+  vis("fetalCalls", s.fetal && !q); vis("pdaCalls", s.pdaBig && !q);
+  // moving cells
+  const g = $("cells"); g.innerHTML = "";
+  if (!q && !matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    for (const [pid, n, dur] of s.flows) for (let i = 0; i < n; i++) {
+      const c = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+      c.setAttribute("r", "6"); c.setAttribute("class", "cell");
+      const m = document.createElementNS("http://www.w3.org/2000/svg", "animateMotion");
+      m.setAttribute("dur", dur + "s"); m.setAttribute("repeatCount", "indefinite"); m.setAttribute("begin", (-(dur / n) * i) + "s");
+      const mp = document.createElementNS("http://www.w3.org/2000/svg", "mpath"); mp.setAttribute("href", "#b-" + pid);
+      m.appendChild(mp); c.appendChild(m); g.appendChild(c);
+    }
+  }
+  $("cap").textContent = q ? "Predict first: which shunts are open, which way does blood cross them, and which parts carry oxygen-rich blood? Untick “Predict first” to check." : s.cap;
+  const ul = $("shunts"); ul.innerHTML = "";
+  (q ? ["Ductus venosus: ?","Foramen ovale: ?","Ductus arteriosus: ?"] : s.shunts).forEach(t => { const li = document.createElement("li"); li.textContent = t; ul.appendChild(li); });
+}
+ROOT.querySelectorAll(".states button").forEach(b => b.addEventListener("click", () => { cur = b.dataset.s; render(); }));
+$("quiz").addEventListener("change", render);
+document.addEventListener("keydown", e => {
+  if (ROOT.hidden) return;
+  const k = Object.keys(S); let i = k.indexOf(cur);
+  if (e.key === "ArrowRight" && i < k.length - 1) { cur = k[i + 1]; render(); }
+  if (e.key === "ArrowLeft" && i > 0) { cur = k[i - 1]; render(); }
+  if (e.key.toLowerCase() === "p") { $("quiz").checked = !$("quiz").checked; render(); }
+});
+render();
+
+})();
+(function(){
+  const views = ["home","appA","appB"];
+  function show(v){ views.forEach(id => document.getElementById(id).hidden = (id !== v)); window.scrollTo(0,0); }
+  document.querySelectorAll("[data-go]").forEach(b => b.addEventListener("click", () => show(b.dataset.go)));
+  show("home");
+})();
+</script>
+</body>
+</html>
